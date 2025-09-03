@@ -1,0 +1,98 @@
+
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "NumberGuessGame"
+        WAR_FILE = "target/NumberGuessGame.war"
+        DOCKER_IMAGE = "numberguessgame:latest"
+        APP_URL = "http://4.234.85.9:8080"
+        SONARQUBE = "SonarQube"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Cloning repository...'
+                git branch: 'main', url: 'https://github.com/Amuzie001/NumberGuessGame.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building project with Maven...'
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running unit tests...'
+                sh 'mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube analysis...'
+                withSonarQubeEnv(SONARQUBE) {
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=NumberGuessGame -Dsonar.host.url=http://4.234.85.9:9000'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo 'Checking SonarQube Quality Gate...'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image...'
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                script {
+                    echo 'Deploying Docker container...'
+                    // Remove old container if exists
+                    sh "docker rm -f ${APP_NAME} || true"
+                    // Run new container
+                    sh "docker run -d --name ${APP_NAME} -p 8080:8080 ${DOCKER_IMAGE}"
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    try {
+                        sh "curl -s ${APP_URL} | grep 'Welcome'"
+                        echo 'Deployment verified successfully!'
+                    } catch (Exception e) {
+                        error 'Deployment verification failed!'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs!'
+        }
+        always {
+            echo 'Cleaning up workspace...'
+            cleanWs()
+        }
+    }
+}
