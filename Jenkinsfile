@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'Java17'     // Name you configured in Jenkins -> Global Tool Configuration
+        maven 'Maven3'   // Name you configured for Maven
+    }
+
     environment {
         APP_NAME   = "NumberGuessGame"
         WAR_FILE   = "target/NumberGuessGame.war"
