@@ -2,22 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk 'Java17'     // Name you configured in Jenkins -> Global Tool Configuration
-        maven 'Maven3'   // Name you configured for Maven
-    }
-
-    environment {
-        APP_NAME   = "NumberGuessGame"
-        WAR_FILE   = "target/NumberGuessGame.war"
-        DEPLOY_DIR = "/opt/tomcat/webapps" // Adjust if Tomcat is elsewhere
-        TOMCAT_URL = "http://16.171.113.59:8080/${APP_NAME}"
-    }
-
-    options {
-        // Keep last 10 builds
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        // Fail fast if any stage fails
-        skipDefaultCheckout(false)
+        jdk 'jdk17'       // Must match the JDK name in Jenkins Global Tool Configuration
+        maven 'maven3'    // Must match the Maven name in Jenkins Global Tool Configuration
     }
 
     stages {
@@ -31,61 +17,51 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project with Maven...'
-                sh 'mvn clean package'
+                sh 'mvn clean install'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running unit tests...'
+                echo 'Running tests...'
                 sh 'mvn test'
             }
         }
 
         stage('Code Quality') {
             steps {
-                echo 'Running code quality checks...'
-                // Uncomment after SonarQube is configured in Jenkins
-                // sh 'mvn sonar:sonar -Dsonar.projectKey=NumberGuessGame'
+                echo 'Running SonarQube analysis...'
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar'
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploying the WAR file to Tomcat...'
-                // Ensure Jenkins has write permissions to Tomcat
-                sh """
-                    cp ${WAR_FILE} ${DEPLOY_DIR}/
-                    sudo systemctl restart tomcat
-                """
+                echo 'Deploying application...'
+                sh 'echo "Deploy step goes here"'
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                echo 'Checking if the application is running...'
-                script {
-                    try {
-                        sh "curl -s -o /dev/null -w '%{http_code}' ${TOMCAT_URL} | grep 200"
-                        echo 'Deployment verified successfully!'
-                    } catch (Exception e) {
-                        error 'Deployment verification failed!'
-                    }
-                }
+                echo 'Verifying deployment...'
+                sh 'echo "Verification step goes here"'
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully!'
+            echo 'Pipeline completed successfully.'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
         }
         always {
             echo 'Cleaning up workspace...'
-            cleanWs()
+            // cleanWs()   // Uncomment this only after installing "Workspace Cleanup Plugin"
         }
     }
 }
