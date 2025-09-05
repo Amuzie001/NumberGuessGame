@@ -4,9 +4,9 @@ pipeline {
     environment {
         APP_NAME = "GuessingGameAppDocker"
         WAR_FILE = "target/GuessingGameAppDocker.war"
-        DOCKER_IMAGE = "guessinggameapp-docker:latest"   // fixed: removed '+' to avoid Docker tag issue
+        DOCKER_IMAGE = "guessinggameapp-docker:latest"   // fixed: no '+' in tag
         APP_URL = "http://4.234.85.9:8080"
-        SONARQUBE = "SonarQube"
+        SONARQUBE = "SonarQube"   // must match your Jenkins SonarQube server name
     }
 
     tools {
@@ -40,11 +40,11 @@ pipeline {
             steps {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv("${SONARQUBE}") {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SONAR_TOKEN')]) {
                         sh '''
                             mvn sonar:sonar \
                                 -Dsonar.projectKey=GuessingGameAppDocker \
-                                -Dsonar.token=$Key
+                                -Dsonar.token=$SONAR_TOKEN
                         '''
                     }
                 }
@@ -100,7 +100,13 @@ pipeline {
         }
         always {
             echo 'Cleaning up workspace...'
-            cleanWs()   // requires Workspace Cleanup plugin
+            script {
+                try {
+                    cleanWs()   // requires Workspace Cleanup plugin
+                } catch (ignored) {
+                    echo 'Workspace cleanup skipped (plugin not installed)'
+                }
+            }
         }
     }
 }
