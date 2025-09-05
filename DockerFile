@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "NumberGuessGame"
-        WAR_FILE = "target/NumberGuessGame.war"
-        DOCKER_IMAGE = "numberguessgame:latest"
+        APP_NAME = "GuessingGameApp+Docker"
+        WAR_FILE = "target/GuessingGameApp+Docker.war"
+        DOCKER_IMAGE = "guessinggameapp+docker:latest"
         APP_URL = "http://4.234.85.9:8080"
         SONARQUBE = "SonarQube"
     }
@@ -41,7 +41,7 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv("${SONARQUBE}") {
                     // Let Jenkins handle the SonarQube host URL
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=NumberGuessGame'
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=GuessingGameApp+Docker'
                 }
             }
         }
@@ -49,8 +49,8 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 echo 'Waiting for SonarQube Quality Gate...'
-                // Increase timeout to 30 minutes in case analysis is slow
-                timeout(time: 30, unit: 'MINUTES') {
+                // Increase timeout to 5 minutes in case analysis is slow
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
