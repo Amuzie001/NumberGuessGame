@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "GuessingGameApp+Docker"
-        WAR_FILE = "target/GuessingGameApp+Docker.war"
+        APP_NAME = "GuessingGameAppDocker"
+        WAR_FILE = "target/GuessingGameAppDocker.war"
         DOCKER_IMAGE = "guessinggameapp+docker:latest"
         APP_URL = "http://4.234.85.9:8080"
         SONARQUBE = "SonarQube"
@@ -41,7 +41,7 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv("${SONARQUBE}") {
                     // Let Jenkins handle the SonarQube host URL
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=GuessingGameApp+Docker'
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=GuessingGameAppDocker'
                 }
             }
         }
