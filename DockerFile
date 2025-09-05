@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME = "GuessingGameAppDocker"
         WAR_FILE = "target/GuessingGameAppDocker.war"
-        DOCKER_IMAGE = "guessinggameapp+docker:latest"
+        DOCKER_IMAGE = "guessinggameapp-docker:latest"   // fixed: removed '+' to avoid Docker tag issue
         APP_URL = "http://4.234.85.9:8080"
         SONARQUBE = "SonarQube"
     }
@@ -40,8 +40,13 @@ pipeline {
             steps {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv("${SONARQUBE}") {
-                    // Let Jenkins handle the SonarQube host URL
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=GuessingGameAppDocker'
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            mvn sonar:sonar \
+                                -Dsonar.projectKey=GuessingGameAppDocker \
+                                -Dsonar.token=$SONAR_TOKEN
+                        '''
+                    }
                 }
             }
         }
@@ -49,7 +54,6 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 echo 'Waiting for SonarQube Quality Gate...'
-                // Increase timeout to 5 minutes in case analysis is slow
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -96,7 +100,7 @@ pipeline {
         }
         always {
             echo 'Cleaning up workspace...'
-            cleanWs()
+            cleanWs()   // requires Workspace Cleanup plugin
         }
     }
 }
