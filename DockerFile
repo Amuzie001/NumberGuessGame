@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "NumberGuessGame"
-        WAR_FILE = "target/NumberGuessGame.war"
+        APP_NAME     = "NumberGuessGame"
+        WAR_FILE     = "target/NumberGuessGame.war"
         DOCKER_IMAGE = "numberguessgame:latest"
-        APP_URL = "http://56.228.21.21:8080"
-        SONARQUBE = "SonarQube"
+        APP_URL      = "http://56.228.21.75:8080"
+        SONARQUBE    = "SonarQube"
     }
 
     stages {
@@ -28,23 +28,27 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
-    steps {
-        echo 'Running SonarQube analysis...'
-        withSonarQubeEnv('SonarQube') {
-            sh """
-                mvn sonar:sonar \
-                    -Dsonar.projectKey=GuessingGameAppDocker
-            """
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube analysis...'
+                withSonarQubeEnv("${SONARQUBE}") {
+                    sh """
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=GuessingGameAppDocker \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.token=$SONAR_AUTH_TOKEN
+                    """
                 }
             }
         }
 
         stage("Quality Gate") {
             steps {
-                script {
-                    def qg = waitForQualityGate()
-                    echo "SonarQube Quality Gate status: ${qg.status}"
+                timeout(time: 1, unit: 'HOURS') {
+                    script {
+                        def qg = waitForQualityGate()
+                        echo "SonarQube Quality Gate status: ${qg.status}"
+                    }
                 }
             }
         }
